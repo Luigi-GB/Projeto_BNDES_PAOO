@@ -12,7 +12,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/operacoes")
 public class ClienteController {
-    //TODO - Intgrar o Service
+    //TODO - Integrar o Service
 
     @GetMapping
     public ResponseEntity<List<Cliente>> listar() {
