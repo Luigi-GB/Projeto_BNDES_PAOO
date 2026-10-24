@@ -9,7 +9,7 @@ import jakarta.persistence.Id;
 public class Cliente {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Integer id; //Id de cada cliente no bd
     private String nome; //Nome da empresa,instituição ou beneficiário
 
     public Cliente(){}
