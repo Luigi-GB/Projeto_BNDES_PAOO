@@ -1,10 +1,10 @@
 package br.com.fatec.api_bndes.service;
 
-import br.com.fatec.api_bndes.dto.OperacaoFinanciamento;
 import br.com.fatec.api_bndes.dto.PainelTecnologia;
 import br.com.fatec.api_bndes.dto.PainelTecnologia.Fatia;
 import br.com.fatec.api_bndes.dto.PainelTecnologia.PontoAno;
 import br.com.fatec.api_bndes.dto.PainelTecnologia.Resumo;
+import br.com.fatec.api_bndes.model.Contrato;
 import br.com.fatec.api_bndes.service.ClassificadorTecnologia.Origem;
 import org.springframework.stereotype.Service;
 
@@ -22,7 +22,7 @@ public class PainelTecnologiaService {
 
     private static final int TOP = 8;
 
-    public PainelTecnologia montar(List<OperacaoFinanciamento> operacoes, String criterio, String arquivo) {
+    public PainelTecnologia montar(List<Contrato> operacoes, String criterio, String arquivo) {
         long totalContratos = 0;
         BigDecimal totalValor = BigDecimal.ZERO;
         long techContratos = 0;
@@ -37,11 +37,12 @@ public class PainelTecnologiaService {
         Map<String, Acc> cliente = new HashMap<>();
         Map<Origem, Acc> origem = new HashMap<>();
 
-        for (OperacaoFinanciamento op : operacoes) {
-            BigDecimal valor = op.valorContratadoReais();
+        for (Contrato op : operacoes) {
+            BigDecimal valor = op.getValorContratadoReais();
+            if (valor == null || op.getDataDaContratacao() == null) continue;   // registro sem valor/data não entra nas somas
             totalContratos++;
             totalValor = totalValor.add(valor);
-            int ano = op.dataDaContratacao().getYear();
+            int ano = op.getDataDaContratacao().getYear();
             anoTotal.merge(ano, valor, BigDecimal::add);
             anoTech.computeIfAbsent(ano, k -> new Acc());   // garante o ano mesmo sem tecnologia
 
@@ -50,14 +51,14 @@ public class PainelTecnologiaService {
 
             techContratos++;
             techValor = techValor.add(valor);
-            if (op.valorDesembolsadoReais() != null) techDesembolsado = techDesembolsado.add(op.valorDesembolsadoReais());
+            if (op.getValorDesembolsadoReais() != null) techDesembolsado = techDesembolsado.add(op.getValorDesembolsadoReais());
 
             anoTech.get(ano).somar(valor);
             origem.computeIfAbsent(o, k -> new Acc()).somar(valor);
-            setor.computeIfAbsent(nome(op.subsetorCnaeAgrupado()), k -> new Acc()).somar(valor);
-            uf.computeIfAbsent(nome(op.uf()), k -> new Acc()).somar(valor);
-            porte.computeIfAbsent(nome(op.porteDoCliente()), k -> new Acc()).somar(valor);
-            cliente.computeIfAbsent(nome(op.cliente()), k -> new Acc()).somar(valor);
+            setor.computeIfAbsent(nome(op.getSubsetorCnaeAgrupado()), k -> new Acc()).somar(valor);
+            uf.computeIfAbsent(nome(op.getUf()), k -> new Acc()).somar(valor);
+            porte.computeIfAbsent(nome(op.getPorteDoCliente()), k -> new Acc()).somar(valor);
+            cliente.computeIfAbsent(nome(op.getCliente()), k -> new Acc()).somar(valor);
         }
 
         BigDecimal ticket = techContratos == 0 ? BigDecimal.ZERO

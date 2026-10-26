@@ -2,104 +2,185 @@ package br.com.fatec.api_bndes.service;
 
 import br.com.fatec.api_bndes.dto.AnaliseContrato;
 import br.com.fatec.api_bndes.dto.FiltroContrato;
+import br.com.fatec.api_bndes.dto.ResumoUf;
+import br.com.fatec.api_bndes.exception.DadosInvalidosException;
 import br.com.fatec.api_bndes.model.Contrato;
 import br.com.fatec.api_bndes.repository.ContratoRepository;
 import br.com.fatec.api_bndes.repository.specification.ContratoSpecification;
-import jakarta.transaction.Transactional;
-import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.Set;
 
+/** Regras de negócio do CRUD de contratos: validação, normalização e consultas. */
 @Service
 public class ContratoService {
+
+    private static final Set<String> UFS = Set.of(
+            "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB",
+            "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO", "IE");
+
     private final ContratoRepository contratoRepository;
+
     public ContratoService(ContratoRepository contratoRepository) {
         this.contratoRepository = contratoRepository;
     }
 
-    // Buscar todos os contrato
-    public List<AnaliseContrato> buscar() {
-        return contratoRepository.findAll(Sort.by("id").ascending())
-                .stream()
-                .map(this::converterParaDto)
-                .collect(Collectors.toList());
+    // ------------------------------------------------------------------ consultas
+
+    /** Lista (sem filtro). limite = null devolve tudo; senão devolve só os primeiros registros. */
+    public Page<AnaliseContrato> listar(Integer limite) {
+        return buscarComFiltros(null, limite);
     }
-    // Filtros de busca
-    public List<AnaliseContrato> buscarComFiltros(FiltroContrato filtro) {
-        // Constrói a specification com base nos campos preenchidos no DTO
+
+    /** Filtra pelos critérios preenchidos. O total devolvido na página é o total que casa com o filtro. */
+    public Page<AnaliseContrato> buscarComFiltros(FiltroContrato filtro, Integer limite) {
+        Sort ordem = Sort.by("id").ascending();
+        Pageable pagina = (limite == null || limite <= 0)
+                ? Pageable.unpaged(ordem)
+                : PageRequest.of(0, limite, ordem);
         Specification<Contrato> spec = ContratoSpecification.comFiltros(filtro);
-
-        // Executa a consulta no banco
-        List<Contrato> operacoes = contratoRepository.findAll(spec);
-
-        // Mapeia Entidade -> Response DTO
-        return operacoes.stream()
-                .map(op -> new AnaliseContrato(
-                        op.getId(),
-                        op.getNumeroDoContrato(),
-                        op.getCliente(),
-                        op.getUf(),
-                        op.getMunicipio(),
-                        op.getDataDaContratacao(),
-                        op.getValorContratadoReais(),
-                        op.getValorDesembolsadoReais(),
-                        op.getSubsetorBndes(),
-                        op.getPorteDoCliente(),
-                        op.getSituacaoDoContrato()
-                ))
-                .collect(Collectors.toList());
+        return contratoRepository.findAll(spec, pagina).map(this::converterParaDto);
     }
-    // Buscar por índice
+
     public Optional<Contrato> buscarPorId(Integer id) {
         return contratoRepository.findById(id);
     }
-    // Adicionar contrato individual
+
+    public List<ResumoUf> resumirPorUf() {
+        return contratoRepository.resumirPorUf();
+    }
+
+    // ------------------------------------------------------------------ escrita
+
     public Contrato salvar(Contrato contrato) {
+        normalizar(contrato);
+        validar(contrato, null);
         return contratoRepository.save(contrato);
     }
-    // Atualizar contrato
-    public Optional<Contrato> atualizar(Integer id, Contrato contratoAtualizado) {
-        return contratoRepository.findById(id).map(contratoExistente -> {
-            contratoExistente.setCliente(contratoAtualizado.getCliente());
-            contratoExistente.setCnpj(contratoAtualizado.getCnpj());
-            contratoExistente.setDescricaoDoProjeto(contratoAtualizado.getDescricaoDoProjeto());
-            contratoExistente.setUf(contratoAtualizado.getUf());
-            contratoExistente.setMunicipio(contratoAtualizado.getMunicipio());
-            contratoExistente.setNumeroDoContrato(contratoAtualizado.getNumeroDoContrato());
-            contratoExistente.setDataDaContratacao(contratoAtualizado.getDataDaContratacao());
-            contratoExistente.setValorContratadoReais(contratoAtualizado.getValorContratadoReais());
-            contratoExistente.setValorDesembolsadoReais(contratoAtualizado.getValorDesembolsadoReais());
-            contratoExistente.setCustoFinanceiro(contratoAtualizado.getCustoFinanceiro());
-            contratoExistente.setJuros(contratoAtualizado.getJuros());
-            contratoExistente.setPrazoCarenciaMeses(contratoAtualizado.getPrazoCarenciaMeses());
-            contratoExistente.setPrazoAmortizacaoMeses(contratoAtualizado.getPrazoAmortizacaoMeses());
-            contratoExistente.setModalidadeDeApoio(contratoAtualizado.getModalidadeDeApoio());
-            contratoExistente.setFormaDeApoio(contratoAtualizado.getFormaDeApoio());
-            contratoExistente.setProduto(contratoAtualizado.getProduto());
-            contratoExistente.setInstrumentoFinanceiro(contratoAtualizado.getInstrumentoFinanceiro());
-            contratoExistente.setSubsetorBndes(contratoAtualizado.getSubsetorBndes());
-            contratoExistente.setPorteDoCliente(contratoAtualizado.getPorteDoCliente());
-            contratoExistente.setNaturezaDoCliente(contratoAtualizado.getNaturezaDoCliente());
-            contratoExistente.setSituacaoDoContrato(contratoAtualizado.getSituacaoDoContrato());
 
-            return contratoRepository.save(contratoExistente);
+    /** Vazio = id não existe (404). Dados ruins lançam DadosInvalidosException (400). */
+    public Optional<Contrato> atualizar(Integer id, Contrato dados) {
+        return contratoRepository.findById(id).map(existente -> {
+            normalizar(dados);
+            validar(dados, id);
+            copiar(dados, existente);
+            return contratoRepository.save(existente);
         });
     }
-    // Deletar contrato
-    public void deletar(Integer id) {
+
+    /** @return false se o id não existe (404). */
+    public boolean deletar(Integer id) {
+        if (!contratoRepository.existsById(id)) {
+            return false;
+        }
         contratoRepository.deleteById(id);
+        return true;
     }
 
-    // Método auxiliar para evitar duplicação de código no mapeamento
+    // ------------------------------------------------------------------ regras
+
+    private void normalizar(Contrato c) {
+        c.setCliente(limpar(c.getCliente()));
+        c.setCnpj(limpar(c.getCnpj()));
+        c.setNumeroDoContrato(limpar(c.getNumeroDoContrato()));
+        c.setMunicipio(limpar(c.getMunicipio()));
+        String uf = limpar(c.getUf());
+        c.setUf(uf == null ? null : uf.toUpperCase(Locale.ROOT));
+        c.setPorteDoCliente(limpar(c.getPorteDoCliente()));
+        c.setSubsetorBndes(limpar(c.getSubsetorBndes()));
+        c.setSituacaoDoContrato(limpar(c.getSituacaoDoContrato()));
+    }
+
+    private static String limpar(String s) {
+        if (s == null) return null;
+        String t = s.trim().replaceAll("\\s+", " ");
+        return t.isEmpty() ? null : t;
+    }
+
+    private void validar(Contrato c, Integer idAtual) {
+        List<String> erros = new ArrayList<>();
+
+        if (c.getCliente() == null) erros.add("cliente é obrigatório");
+        if (c.getNumeroDoContrato() == null) {
+            erros.add("numeroDoContrato é obrigatório");
+        } else {
+            boolean repetido = idAtual == null
+                    ? contratoRepository.existsByNumeroDoContrato(c.getNumeroDoContrato())
+                    : contratoRepository.existsByNumeroDoContratoAndIdNot(c.getNumeroDoContrato(), idAtual);
+            if (repetido) erros.add("já existe um contrato com o número " + c.getNumeroDoContrato());
+        }
+        if (c.getDataDaContratacao() == null) {
+            erros.add("dataDaContratacao é obrigatória");
+        } else if (c.getDataDaContratacao().isAfter(LocalDate.now())) {
+            erros.add("dataDaContratacao não pode ser futura");
+        }
+        if (c.getValorContratadoReais() == null) {
+            erros.add("valorContratadoReais é obrigatório");
+        } else if (c.getValorContratadoReais().compareTo(BigDecimal.ZERO) <= 0) {
+            erros.add("valorContratadoReais deve ser maior que zero");
+        }
+        if (c.getValorDesembolsadoReais() != null && c.getValorDesembolsadoReais().signum() < 0) {
+            erros.add("valorDesembolsadoReais não pode ser negativo");
+        }
+        if (c.getUf() != null && !UFS.contains(c.getUf())) {
+            erros.add("uf inválida: " + c.getUf());
+        }
+        if (c.getCnpj() != null && c.getCnpj().replaceAll("\\D", "").length() != 14) {
+            erros.add("cnpj deve ter 14 dígitos");
+        }
+
+        if (!erros.isEmpty()) {
+            throw new DadosInvalidosException(erros);
+        }
+    }
+
+    /** Copia todos os campos de negócio (o id do destino é preservado). */
+    private static void copiar(Contrato origem, Contrato destino) {
+        destino.setCliente(origem.getCliente());
+        destino.setCnpj(origem.getCnpj());
+        destino.setDescricaoDoProjeto(origem.getDescricaoDoProjeto());
+        destino.setUf(origem.getUf());
+        destino.setMunicipio(origem.getMunicipio());
+        destino.setNumeroDoContrato(origem.getNumeroDoContrato());
+        destino.setDataDaContratacao(origem.getDataDaContratacao());
+        destino.setValorContratadoReais(origem.getValorContratadoReais());
+        destino.setValorDesembolsadoReais(origem.getValorDesembolsadoReais());
+        destino.setFonteDeRecursoDesembolsos(origem.getFonteDeRecursoDesembolsos());
+        destino.setCustoFinanceiro(origem.getCustoFinanceiro());
+        destino.setJuros(origem.getJuros());
+        destino.setPrazoCarenciaMeses(origem.getPrazoCarenciaMeses());
+        destino.setPrazoAmortizacaoMeses(origem.getPrazoAmortizacaoMeses());
+        destino.setModalidadeDeApoio(origem.getModalidadeDeApoio());
+        destino.setFormaDeApoio(origem.getFormaDeApoio());
+        destino.setProduto(origem.getProduto());
+        destino.setInstrumentoFinanceiro(origem.getInstrumentoFinanceiro());
+        destino.setInovacao(origem.getInovacao());
+        destino.setAreaOperacional(origem.getAreaOperacional());
+        destino.setSetorCnae(origem.getSetorCnae());
+        destino.setSubsetorCnaeAgrupado(origem.getSubsetorCnaeAgrupado());
+        destino.setSubsetorCnaeNome(origem.getSubsetorCnaeNome());
+        destino.setSetorBndes(origem.getSetorBndes());
+        destino.setSubsetorBndes(origem.getSubsetorBndes());
+        destino.setPorteDoCliente(origem.getPorteDoCliente());
+        destino.setNaturezaDoCliente(origem.getNaturezaDoCliente());
+        destino.setInstituicaoFinanceiraCredenciada(origem.getInstituicaoFinanceiraCredenciada());
+        destino.setCnpjDaInstituicaoFinanceiraCredenciada(origem.getCnpjDaInstituicaoFinanceiraCredenciada());
+        destino.setTipoDeGarantia(origem.getTipoDeGarantia());
+        destino.setTipoDeExcepcionalidade(origem.getTipoDeExcepcionalidade());
+        destino.setSituacaoDoContrato(origem.getSituacaoDoContrato());
+    }
+
     private AnaliseContrato converterParaDto(Contrato op) {
         return new AnaliseContrato(
                 op.getId(),
@@ -112,111 +193,6 @@ public class ContratoService {
                 op.getValorDesembolsadoReais(),
                 op.getSubsetorBndes(),
                 op.getPorteDoCliente(),
-                op.getSituacaoDoContrato()
-        );
+                op.getSituacaoDoContrato());
     }
-
-    private void validarArquivo(MultipartFile arquivo) {
-
-        if (arquivo == null || arquivo.isEmpty()) {
-            throw new IllegalArgumentException( "Selecione um arquivo para importar." );
-        }
-
-        String nomeArquivo = arquivo.getOriginalFilename();
-
-        if (nomeArquivo == null) {
-            throw new IllegalArgumentException( "O arquivo selecionado é inválido." );
-        }
-
-        String nomeEmMinusculo = nomeArquivo.toLowerCase();
-
-        if (!nomeEmMinusculo.endsWith(".txt") && !nomeEmMinusculo.endsWith(".csv")) {
-
-            throw new IllegalArgumentException( "Selecione um arquivo TXT ou CSV." );
-        }
-    }
-    @Transactional
-    public int importarArquivo(MultipartFile arquivo) {
-
-        validarArquivo(arquivo);
-
-        List<Contrato> contratosImportados = new ArrayList<>();
-
-        try (BufferedReader leitor = new BufferedReader(
-                new InputStreamReader(
-                        arquivo.getInputStream(),
-                        StandardCharsets.UTF_8))) {
-
-            String linha;
-            int numeroLinha = 0;
-
-            while ((linha = leitor.readLine()) != null) {
-                numeroLinha++;
-
-                linha = linha.trim();
-
-                if (linha.isEmpty()) {
-                    throw new IllegalArgumentException(
-                            "A linha " + numeroLinha + " está vazia."
-                    );
-                }
-
-                String[] dados = linha.split(";", -1);
-
-                if (dados.length != 21) {
-                    throw new IllegalArgumentException(
-                            "Formato inválido na linha " + numeroLinha
-                    );
-                }
-
-                String nome = dados[0].trim();
-                String idadeTexto = dados[1].trim();
-
-                if (numeroLinha == 1) {
-                    nome = nome.replace("\uFEFF", "");
-                }
-
-                if (nome.isEmpty()) {
-                    throw new IllegalArgumentException( "O nome está vazio na linha " + numeroLinha + "." );
-                }
-
-                int idade;
-
-                try {
-                    idade = Integer.parseInt(idadeTexto);
-                } catch (NumberFormatException erro) {
-                    throw new IllegalArgumentException( "A idade da linha " + numeroLinha + " deve ser um número inteiro." );
-                }
-
-                if (idade < 0 || idade > 180) {
-                    throw new IllegalArgumentException( "A idade da linha " + numeroLinha + " deve estar entre 0 e 180 anos." );
-                }
-
-                Contrato contrato = new Contrato();
-                contrato.setCliente(nome); //*****
-                contrato.setPrazoCarenciaMeses(idade); //*****
-
-                contratosImportados.add(contrato);
-            }
-
-            if (contratosImportados.isEmpty()) {
-                throw new IllegalArgumentException(
-                        "O arquivo não contém contratos."
-                );
-            }
-
-            contratoRepository.saveAll(contratosImportados);
-
-            return contratosImportados.size();
-
-        } catch (IllegalArgumentException erro) {
-            throw erro;
-
-        } catch (Exception erro) {
-            throw new IllegalArgumentException(
-                    "Não foi possível ler o arquivo."
-            );
-        }
-    }
-
 }

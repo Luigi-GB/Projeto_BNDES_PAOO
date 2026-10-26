@@ -1,6 +1,7 @@
 package br.com.fatec.api_bndes.dto;
 
-import java.math.BigDecimal;
+import org.springframework.format.annotation.DateTimeFormat;
+
 import java.time.LocalDate;
 
 public class FiltroContrato {
@@ -10,7 +11,9 @@ public class FiltroContrato {
     private String porteDoCliente;
     private String subsetorBndes;
     private String situacaoDoContrato;
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate dataInicio;
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate dataFim;
 
     // Getters e Setters

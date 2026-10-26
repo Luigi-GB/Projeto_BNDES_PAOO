@@ -1,6 +1,6 @@
 package br.com.fatec.api_bndes.service;
 
-import br.com.fatec.api_bndes.dto.OperacaoFinanciamento;
+import br.com.fatec.api_bndes.model.Contrato;
 import br.com.fatec.api_bndes.util.Normalizador;
 
 import java.util.Locale;
@@ -26,9 +26,9 @@ public final class ClassificadorTecnologia {
     private ClassificadorTecnologia() {
     }
 
-    public static Origem classificar(OperacaoFinanciamento op) {
-        boolean inovacao = Boolean.TRUE.equals(op.inovacao());
-        boolean palavra = temPalavraChave(op.descricaoDoProjeto());
+    public static Origem classificar(Contrato op) {
+        boolean inovacao = Boolean.TRUE.equals(op.getInovacao());
+        boolean palavra = temPalavraChave(op.getDescricaoDoProjeto());
         if (inovacao && palavra) return Origem.AMBOS;
         if (inovacao) return Origem.SO_INOVACAO;
         if (palavra) return Origem.SO_PALAVRA_CHAVE;

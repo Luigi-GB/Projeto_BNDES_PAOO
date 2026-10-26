@@ -7,10 +7,13 @@ import br.com.fatec.api_bndes.dto.RelatorioImportacao.MotivoRejeicaoResumo;
 import br.com.fatec.api_bndes.exception.ArquivoInvalidoException;
 import br.com.fatec.api_bndes.exception.LinhaInvalidaException;
 import br.com.fatec.api_bndes.exception.MotivoRejeicao;
+import br.com.fatec.api_bndes.repository.ContratoRepository;
 import br.com.fatec.api_bndes.util.LinhaCsvParser;
 import br.com.fatec.api_bndes.util.Normalizador;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -36,15 +39,39 @@ public class ImportacaoService {
     private static final List<String> COLUNAS_OBRIGATORIAS = List.of(
             "cliente", "cnpj", "numero_do_contrato", "data_da_contratacao", "valor_contratado_reais");
 
+    private static final int TAMANHO_LOTE = 500;
+
     private final boolean removerAcentos;
-    private final OperacoesImportadas operacoesImportadas;
+    private final ContratoRepository contratoRepository;
 
     public ImportacaoService(@Value("${importacao.remover-acentos:true}") boolean removerAcentos,
-                             OperacoesImportadas operacoesImportadas) {
+                             ContratoRepository contratoRepository) {
         this.removerAcentos = removerAcentos;
-        this.operacoesImportadas = operacoesImportadas;
+        this.contratoRepository = contratoRepository;
     }
 
+    /**
+     * Ponto de entrada do upload: valida o arquivo recebido e importa. Tudo ocorre numa única transação:
+     * se a gravação no banco falhar no meio, nada fica pela metade.
+     */
+    @Transactional
+    public RelatorioImportacao importar(MultipartFile arquivo) {
+        if (arquivo == null || arquivo.isEmpty()) {
+            throw new ArquivoInvalidoException("O arquivo enviado está vazio.");
+        }
+        String nome = arquivo.getOriginalFilename() == null ? "arquivo.csv" : arquivo.getOriginalFilename();
+        String minusculo = nome.toLowerCase(Locale.ROOT);
+        if (!minusculo.endsWith(".csv") && !minusculo.endsWith(".txt")) {
+            throw new ArquivoInvalidoException("Envie um arquivo no formato .csv.");
+        }
+        try {
+            return importar(nome, arquivo.getBytes());
+        } catch (IOException e) {
+            throw new ArquivoInvalidoException("Não foi possível ler o arquivo enviado.");
+        }
+    }
+
+    @Transactional
     public RelatorioImportacao importar(String nomeArquivo, byte[] conteudo) {
         long inicio = System.nanoTime();
 
@@ -87,9 +114,7 @@ public class ImportacaoService {
             throw new ArquivoInvalidoException("Não foi possível ler o arquivo: " + e.getMessage());
         }
 
-        if (acc.importadas > 0) {
-            operacoesImportadas.substituir(nomeArquivo, acc.aceitas);   // alimenta o painel de gráficos
-        }
+        persistir(acc);   // grava no PostgreSQL (Neon), pulando contratos que já existem
 
         return montarRelatorio(nomeArquivo, charset, acc, (System.nanoTime() - inicio) / 1_000_000);
     }
@@ -125,16 +150,56 @@ public class ImportacaoService {
             }
             acc.vistas.put(operacao, numeroLinha);
 
-            acc.importadas++;
             acc.aceitas.add(operacao);
             avisosDaLinha.forEach(a -> acc.avisos.merge(a, 1L, Long::sum));
-            if (acc.amostra.size() < TAMANHO_AMOSTRA) {
-                acc.amostra.add(operacao);
-            }
         } catch (LinhaInvalidaException e) {
             acc.rejeitadas++;
             acc.registrarRejeicao(e, numeroLinha);
         }
+    }
+
+    // ---------------------------------------------------------------- persistência
+
+    /**
+     * Política de reimportação: o número do contrato é único. Contrato que já está no banco (ou que se
+     * repete dentro do próprio arquivo) NÃO é regravado: conta como rejeitado/duplicado. Assim,
+     * importar o mesmo arquivo duas vezes não duplica dados nem altera o que já foi gravado.
+     */
+    private void persistir(Acumulador acc) {
+        Set<String> numerosVistos = new HashSet<>();
+        for (int inicio = 0; inicio < acc.aceitas.size(); inicio += TAMANHO_LOTE) {
+            List<OperacaoFinanciamento> lote =
+                    acc.aceitas.subList(inicio, Math.min(inicio + TAMANHO_LOTE, acc.aceitas.size()));
+
+            Set<String> existentes = new HashSet<>(contratoRepository.findNumerosExistentes(
+                    lote.stream().map(o -> String.valueOf(o.numeroDoContrato())).toList()));
+
+            List<br.com.fatec.api_bndes.model.Contrato> paraSalvar = new ArrayList<>();
+            for (OperacaoFinanciamento op : lote) {
+                String numero = String.valueOf(op.numeroDoContrato());
+                long linha = acc.vistas.getOrDefault(op, 0L);
+                if (existentes.contains(numero)) {
+                    rejeitarDuplicada(acc, linha, "contrato " + numero + " já existe no banco");
+                    continue;
+                }
+                if (!numerosVistos.add(numero)) {
+                    rejeitarDuplicada(acc, linha, "número de contrato " + numero + " repetido no arquivo");
+                    continue;
+                }
+                paraSalvar.add(ContratoMapper.paraEntidade(op));
+                if (acc.amostra.size() < TAMANHO_AMOSTRA) {
+                    acc.amostra.add(op);
+                }
+            }
+            contratoRepository.saveAll(paraSalvar);
+            acc.importadas += paraSalvar.size();
+        }
+    }
+
+    private void rejeitarDuplicada(Acumulador acc, long linha, String detalhe) {
+        acc.duplicadas++;
+        acc.rejeitadas++;
+        acc.registrarRejeicao(new LinhaInvalidaException(MotivoRejeicao.LINHA_DUPLICADA, "numero_do_contrato", detalhe), linha);
     }
 
     // ---------------------------------------------------------------- cabeçalho
