@@ -2,9 +2,30 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Importador BNDES</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+<main>
+    <header>
+        <h1>Importador de operações do BNDES</h1>
+        <p>Selecione o arquivo CSV de operações de financiamento para o sistema ler, limpar e validar os dados.</p>
+    </header>
 
+    <section class="upload">
+        <input type="file" id="arquivo" accept=".csv,.txt" hidden>
+        <button type="button" id="botao">Selecionar arquivo CSV</button>
+        <span id="nome-arquivo"></span>
+    </section>
+
+    <div id="carregando" class="carregando" hidden>
+        <div class="spinner"></div>
+        <span>Lendo e validando o arquivo…</span>
+    </div>
+
+    <section id="resultado" hidden></section>
+</main>
+<script src="js/bndes.js"></script>
 </body>
 </html>

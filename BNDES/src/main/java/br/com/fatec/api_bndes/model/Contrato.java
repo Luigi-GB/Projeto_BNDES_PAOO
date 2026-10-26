@@ -83,7 +83,6 @@ public class Contrato {
     public String getCliente() {
         return cliente;
     }
-
     public void setCliente(String cliente) {
         this.cliente = cliente;
     }
@@ -91,7 +90,6 @@ public class Contrato {
     public String getCnpj() {
         return cnpj;
     }
-
     public void setCnpj(String cnpj) {
         this.cnpj = cnpj;
     }
@@ -99,15 +97,11 @@ public class Contrato {
     public String getDescricaoDoProjeto() {
         return descricaoDoProjeto;
     }
-
     public void setDescricaoDoProjeto(String descricaoDoProjeto) {
         this.descricaoDoProjeto = descricaoDoProjeto;
     }
 
-    public String getUf() {
-        return uf;
-    }
-
+    public String getUf() { return uf; }
     public void setUf(String uf) {
         this.uf = uf;
     }
@@ -115,7 +109,6 @@ public class Contrato {
     public String getMunicipio() {
         return municipio;
     }
-
     public void setMunicipio(String municipio) {
         this.municipio = municipio;
     }
@@ -123,15 +116,11 @@ public class Contrato {
     public String getNumeroDoContrato() {
         return numeroDoContrato;
     }
-
-    public void setNumeroDoContrato(String numeroDoContrato) {
-        this.numeroDoContrato = numeroDoContrato;
-    }
+    public void setNumeroDoContrato(String numeroDoContrato) { this.numeroDoContrato = numeroDoContrato; }
 
     public LocalDate getDataDaContratacao() {
         return dataDaContratacao;
     }
-
     public void setDataDaContratacao(LocalDate dataDaContratacao) {
         this.dataDaContratacao = dataDaContratacao;
     }
@@ -139,23 +128,16 @@ public class Contrato {
     public BigDecimal getValorContratadoReais() {
         return valorContratadoReais;
     }
-
-    public void setValorContratadoReais(BigDecimal valorContratadoReais) {
-        this.valorContratadoReais = valorContratadoReais;
-    }
+    public void setValorContratadoReais(BigDecimal valorContratadoReais) { this.valorContratadoReais = valorContratadoReais; }
 
     public BigDecimal getValorDesembolsadoReais() {
         return valorDesembolsadoReais;
     }
-
-    public void setValorDesembolsadoReais(BigDecimal valorDesembolsadoReais) {
-        this.valorDesembolsadoReais = valorDesembolsadoReais;
-    }
+    public void setValorDesembolsadoReais(BigDecimal valorDesembolsadoReais) { this.valorDesembolsadoReais = valorDesembolsadoReais; }
 
     public String getCustoFinanceiro() {
         return custoFinanceiro;
     }
-
     public void setCustoFinanceiro(String custoFinanceiro) {
         this.custoFinanceiro = custoFinanceiro;
     }
@@ -163,7 +145,6 @@ public class Contrato {
     public String getJuros() {
         return juros;
     }
-
     public void setJuros(String juros) {
         this.juros = juros;
     }
@@ -171,7 +152,6 @@ public class Contrato {
     public Integer getPrazoCarenciaMeses() {
         return prazoCarenciaMeses;
     }
-
     public void setPrazoCarenciaMeses(Integer prazoCarenciaMeses) {
         this.prazoCarenciaMeses = prazoCarenciaMeses;
     }
@@ -179,15 +159,11 @@ public class Contrato {
     public Integer getPrazoAmortizacaoMeses() {
         return prazoAmortizacaoMeses;
     }
-
-    public void setPrazoAmortizacaoMeses(Integer prazoAmortizacaoMeses) {
-        this.prazoAmortizacaoMeses = prazoAmortizacaoMeses;
-    }
+    public void setPrazoAmortizacaoMeses(Integer prazoAmortizacaoMeses) { this.prazoAmortizacaoMeses = prazoAmortizacaoMeses; }
 
     public String getModalidadeDeApoio() {
         return modalidadeDeApoio;
     }
-
     public void setModalidadeDeApoio(String modalidadeDeApoio) {
         this.modalidadeDeApoio = modalidadeDeApoio;
     }
@@ -195,7 +171,6 @@ public class Contrato {
     public String getFormaDeApoio() {
         return formaDeApoio;
     }
-
     public void setFormaDeApoio(String formaDeApoio) {
         this.formaDeApoio = formaDeApoio;
     }
@@ -203,7 +178,6 @@ public class Contrato {
     public String getProduto() {
         return produto;
     }
-
     public void setProduto(String produto) {
         this.produto = produto;
     }
@@ -211,7 +185,6 @@ public class Contrato {
     public String getInstrumentoFinanceiro() {
         return instrumentoFinanceiro;
     }
-
     public void setInstrumentoFinanceiro(String instrumentoFinanceiro) {
         this.instrumentoFinanceiro = instrumentoFinanceiro;
     }
@@ -219,7 +192,6 @@ public class Contrato {
     public String getSubsetorBndes() {
         return subsetorBndes;
     }
-
     public void setSubsetorBndes(String subsetorBndes) {
         this.subsetorBndes = subsetorBndes;
     }
@@ -227,7 +199,6 @@ public class Contrato {
     public String getPorteDoCliente() {
         return porteDoCliente;
     }
-
     public void setPorteDoCliente(String porteDoCliente) {
         this.porteDoCliente = porteDoCliente;
     }
@@ -235,7 +206,6 @@ public class Contrato {
     public String getNaturezaDoCliente() {
         return naturezaDoCliente;
     }
-
     public void setNaturezaDoCliente(String naturezaDoCliente) {
         this.naturezaDoCliente = naturezaDoCliente;
     }
@@ -243,7 +213,6 @@ public class Contrato {
     public String getSituacaoDoContrato() {
         return situacaoDoContrato;
     }
-
     public void setSituacaoDoContrato(String situacaoDoContrato) {
         this.situacaoDoContrato = situacaoDoContrato;
     }

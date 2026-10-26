@@ -1,5 +1,7 @@
 package br.com.fatec.api_bndes.controller;
 
+import br.com.fatec.api_bndes.dto.AnaliseContrato;
+import br.com.fatec.api_bndes.dto.FiltroContrato;
 import br.com.fatec.api_bndes.model.Contrato;
 import br.com.fatec.api_bndes.service.ContratoService;
 import org.springframework.http.ResponseEntity;
@@ -20,10 +22,11 @@ public class ContratoController {
         this.contratoService = contratoService;
     }
 
-    // GET - listar todos os contratos
+    // GET - busca todos od dados, ou filtra se for passado alguma especificação via URL
     @GetMapping
-    public ResponseEntity<List<Contrato>> listar() {
-        return ResponseEntity.ok().body(contratoService.listar());
+    public ResponseEntity<List<AnaliseContrato>> buscar(@ModelAttribute FiltroContrato filtro) {
+        List<AnaliseContrato> resultado = contratoService.buscarComFiltros(filtro);
+        return ResponseEntity.ok().body(resultado);
     }
     // GET - buscar contrato por índice(ID)
     @GetMapping("/{id}")
@@ -40,10 +43,20 @@ public class ContratoController {
         return ResponseEntity.status(201).body(contrato);
     }
     // POST - adiconar vários contratos por um arquivo .txt ou .csv
-    /*@PostMapping("/importar")
-    public ResponseEntity<String> importarArquivo(@RequestParam("arquivo") MultipartFile arquivo) {
-
-    }*/
+    @PostMapping("/importar")
+    public ResponseEntity<String> importarArquivo(
+            @RequestParam("arquivo") MultipartFile arquivo) {
+        try {
+            int quantidade = contratoService.importarArquivo(arquivo);
+            return ResponseEntity.ok(
+                    quantidade + " contratos importados com sucesso."
+            );
+        } catch (IllegalArgumentException erro) {
+            return ResponseEntity
+                    .badRequest()
+                    .body("Arquivo inválido: " + erro.getMessage());
+        }
+    }
 
     // PUT - atualizar contrato
     @PutMapping("/{id}")
@@ -62,8 +75,4 @@ public class ContratoController {
         }
         return ResponseEntity.notFound().build();
     }
-    /*@GetMapping("/filtro")
-    public ResponseEntity<Contrato> filtrar(){
-
-    }*/
 }

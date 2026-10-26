@@ -1,36 +1,50 @@
 package br.com.fatec.api_bndes.dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public class AnaliseContrato {
 
+    private Integer id;
+    private String numeroDoContrato;
+    private String cliente;
     private String uf;
     private String municipio;
-    private String porteDoCliente;
+    private LocalDate dataDaContratacao;
+    private BigDecimal valorContratadoReais;
+    private BigDecimal valorDesembolsadoReais;
     private String subsetorBndes;
+    private String porteDoCliente;
     private String situacaoDoContrato;
-    private LocalDate dataInicio;
-    private LocalDate dataFim;
 
-    // Getters e Setters
+    // Construtor a partir da Entidade (facilita conversões via Projection ou ModelMapper/MapStruct)
+    public AnaliseContrato(Integer id, String numeroDoContrato, String cliente, String uf, String municipio,
+                          LocalDate dataDaContratacao, BigDecimal valorContratadoReais,
+                          BigDecimal valorDesembolsadoReais, String subsetorBndes,
+                          String porteDoCliente, String situacaoDoContrato) {
+        this.id = id;
+        this.numeroDoContrato = numeroDoContrato;
+        this.cliente = cliente;
+        this.uf = uf;
+        this.municipio = municipio;
+        this.dataDaContratacao = dataDaContratacao;
+        this.valorContratadoReais = valorContratadoReais;
+        this.valorDesembolsadoReais = valorDesembolsadoReais;
+        this.subsetorBndes = subsetorBndes;
+        this.porteDoCliente = porteDoCliente;
+        this.situacaoDoContrato = situacaoDoContrato;
+    }
+
+    // Getters
+    public Integer getId() { return id;}
+    public String getNumeroDoContrato() { return numeroDoContrato; }
+    public String getCliente() { return cliente; }
     public String getUf() { return uf; }
-    public void setUf(String uf) { this.uf = uf; }
-
     public String getMunicipio() { return municipio; }
-    public void setMunicipio(String municipio) { this.municipio = municipio; }
-
-    public String getPorteDoCliente() { return porteDoCliente; }
-    public void setPorteDoCliente(String porteDoCliente) { this.porteDoCliente = porteDoCliente; }
-
+    public LocalDate getDataDaContratacao() { return dataDaContratacao; }
+    public BigDecimal getValorContratadoReais() { return valorContratadoReais; }
+    public BigDecimal getValorDesembolsadoReais() { return valorDesembolsadoReais; }
     public String getSubsetorBndes() { return subsetorBndes; }
-    public void setSubsetorBndes(String subsetorBndes) { this.subsetorBndes = subsetorBndes; }
-
+    public String getPorteDoCliente() { return porteDoCliente; }
     public String getSituacaoDoContrato() { return situacaoDoContrato; }
-    public void setSituacaoDoContrato(String situacaoDoContrato) { this.situacaoDoContrato = situacaoDoContrato; }
-
-    public LocalDate getDataInicio() { return dataInicio; }
-    public void setDataInicio(LocalDate dataInicio) { this.dataInicio = dataInicio; }
-
-    public LocalDate getDataFim() { return dataFim; }
-    public void setDataFim(LocalDate dataFim) { this.dataFim = dataFim; }
 }
