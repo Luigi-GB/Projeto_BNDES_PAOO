@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Painel de tecnologia — BNDES</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/painel.css">
+</head>
+<body>
+<main class="larga">
+    <header>
+        <a class="voltar" href="index.html">← Voltar ao sistema</a>
+        <h1>Financiamentos de tecnologia no BNDES</h1>
+        <p id="subtitulo">Carregando…</p>
+    </header>
+
+    <section class="filtro">
+        <label for="criterio">Como identificar “tecnologia”:</label>
+        <select id="criterio">
+            <option value="COMBINADO">Inovação ou palavra-chave (padrão)</option>
+            <option value="INOVACAO">Só coluna inovação = SIM</option>
+            <option value="PALAVRA_CHAVE">Só palavra-chave na descrição</option>
+        </select>
+        <span id="explica-criterio" class="meta"></span>
+    </section>
+
+    <div id="erro" class="mensagem erro" hidden></div>
+
+    <div id="conteudo" hidden>
+        <section id="cartoes" class="cartoes"></section>
+
+        <section class="grafico cheio">
+            <h2>Quanto foi contratado em tecnologia a cada ano</h2>
+            <div id="g-ano"></div>
+            <p class="leitura" id="l-ano"></p>
+        </section>
+
+        <div class="grade">
+            <section class="grafico">
+                <h2>Como cada contrato foi classificado</h2>
+                <div id="g-criterio"></div>
+                <p class="leitura" id="l-criterio"></p>
+            </section>
+            <section class="grafico">
+                <h2>Porte do cliente</h2>
+                <div id="g-porte"></div>
+                <p class="leitura" id="l-porte"></p>
+            </section>
+            <section class="grafico">
+                <h2>Setores que mais receberam</h2>
+                <div id="g-setor"></div>
+                <p class="leitura" id="l-setor"></p>
+            </section>
+            <section class="grafico">
+                <h2>Estados que mais receberam</h2>
+                <div id="g-uf"></div>
+                <p class="leitura" id="l-uf"></p>
+            </section>
+            <section class="grafico cheio">
+                <h2>Maiores clientes</h2>
+                <div id="g-cliente"></div>
+                <p class="leitura" id="l-cliente"></p>
+            </section>
+        </div>
+    </div>
+</main>
+<script src="js/painel.js"></script>
+</body>
+</html>
