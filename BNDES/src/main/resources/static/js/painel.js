@@ -154,7 +154,7 @@ function desenhar(d) {
     document.getElementById('erro').hidden = true;
     document.getElementById('conteudo').hidden = false;
     const r = d.resumo, v = r.valorTecnologia;
-    texto('subtitulo', `Dados do arquivo ${d.arquivo}: ${fmtInt.format(r.contratosTotal)} contratos importados, ` +
+    texto('subtitulo', `Dados ${d.arquivo}: ${fmtInt.format(r.contratosTotal)} contratos cadastrados, ` +
         `${fmtInt.format(r.contratosTecnologia)} identificados como tecnologia.`);
 
     document.getElementById('cartoes').replaceChildren(
