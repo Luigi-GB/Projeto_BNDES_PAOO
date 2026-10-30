@@ -2,6 +2,7 @@ package br.com.fatec.api_bndes.service;
 
 import br.com.fatec.api_bndes.dto.OperacaoFinanciamento;
 import br.com.fatec.api_bndes.model.Contrato;
+import br.com.fatec.api_bndes.util.HashLinha;
 
 /** Converte a linha já tratada do CSV (DTO) na entidade que vai para o banco. */
 public final class ContratoMapper {
@@ -11,6 +12,7 @@ public final class ContratoMapper {
 
     public static Contrato paraEntidade(OperacaoFinanciamento op) {
         Contrato c = new Contrato();
+        c.aplicarHashLinha(HashLinha.de(op));
         c.setCliente(cortar(op.cliente(), 255));
         c.setCnpj(cortar(op.cnpj(), 20));
         c.setDescricaoDoProjeto(op.descricaoDoProjeto());

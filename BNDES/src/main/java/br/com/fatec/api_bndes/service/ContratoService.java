@@ -114,11 +114,6 @@ public class ContratoService {
         if (c.getCliente() == null) erros.add("cliente é obrigatório");
         if (c.getNumeroDoContrato() == null) {
             erros.add("numeroDoContrato é obrigatório");
-        } else {
-            boolean repetido = idAtual == null
-                    ? contratoRepository.existsByNumeroDoContrato(c.getNumeroDoContrato())
-                    : contratoRepository.existsByNumeroDoContratoAndIdNot(c.getNumeroDoContrato(), idAtual);
-            if (repetido) erros.add("já existe um contrato com o número " + c.getNumeroDoContrato());
         }
         if (c.getDataDaContratacao() == null) {
             erros.add("dataDaContratacao é obrigatória");

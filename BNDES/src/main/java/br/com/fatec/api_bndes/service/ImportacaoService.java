@@ -8,6 +8,7 @@ import br.com.fatec.api_bndes.exception.ArquivoInvalidoException;
 import br.com.fatec.api_bndes.exception.LinhaInvalidaException;
 import br.com.fatec.api_bndes.exception.MotivoRejeicao;
 import br.com.fatec.api_bndes.repository.ContratoRepository;
+import br.com.fatec.api_bndes.util.HashLinha;
 import br.com.fatec.api_bndes.util.LinhaCsvParser;
 import br.com.fatec.api_bndes.util.Normalizador;
 import org.springframework.beans.factory.annotation.Value;
@@ -114,7 +115,7 @@ public class ImportacaoService {
             throw new ArquivoInvalidoException("Não foi possível ler o arquivo: " + e.getMessage());
         }
 
-        persistir(acc);   // grava no PostgreSQL (Neon), pulando contratos que já existem
+        persistir(acc);   // grava no PostgreSQL (Neon), pulando linhas idênticas às que já existem
 
         return montarRelatorio(nomeArquivo, charset, acc, (System.nanoTime() - inicio) / 1_000_000);
     }
@@ -161,29 +162,25 @@ public class ImportacaoService {
     // ---------------------------------------------------------------- persistência
 
     /**
-     * Política de reimportação: o número do contrato é único. Contrato que já está no banco (ou que se
-     * repete dentro do próprio arquivo) NÃO é regravado: conta como rejeitado/duplicado. Assim,
-     * importar o mesmo arquivo duas vezes não duplica dados nem altera o que já foi gravado.
+     * Política de duplicidade e reimportação: uma linha só é duplicada se TODOS os campos tratados forem
+     * idênticos a outra (o número do contrato sozinho não é chave, pois se repete legitimamente).
+     * Dentro do arquivo isso já foi checado em processarLinha; aqui comparamos com o que já está no banco
+     * pelo hash da linha. Linha idêntica a uma já gravada NÃO é regravada e conta como rejeitada/duplicada,
+     * então importar o mesmo arquivo duas vezes não duplica dados.
      */
     private void persistir(Acumulador acc) {
-        Set<String> numerosVistos = new HashSet<>();
         for (int inicio = 0; inicio < acc.aceitas.size(); inicio += TAMANHO_LOTE) {
             List<OperacaoFinanciamento> lote =
                     acc.aceitas.subList(inicio, Math.min(inicio + TAMANHO_LOTE, acc.aceitas.size()));
 
-            Set<String> existentes = new HashSet<>(contratoRepository.findNumerosExistentes(
-                    lote.stream().map(o -> String.valueOf(o.numeroDoContrato())).toList()));
+            Set<String> existentes = new HashSet<>(contratoRepository.findHashesExistentes(
+                    lote.stream().map(HashLinha::de).toList()));
 
             List<br.com.fatec.api_bndes.model.Contrato> paraSalvar = new ArrayList<>();
             for (OperacaoFinanciamento op : lote) {
-                String numero = String.valueOf(op.numeroDoContrato());
                 long linha = acc.vistas.getOrDefault(op, 0L);
-                if (existentes.contains(numero)) {
-                    rejeitarDuplicada(acc, linha, "contrato " + numero + " já existe no banco");
-                    continue;
-                }
-                if (!numerosVistos.add(numero)) {
-                    rejeitarDuplicada(acc, linha, "número de contrato " + numero + " repetido no arquivo");
+                if (existentes.contains(HashLinha.de(op))) {
+                    rejeitarDuplicada(acc, linha, "linha idêntica (contrato " + op.numeroDoContrato() + ") já existe no banco");
                     continue;
                 }
                 paraSalvar.add(ContratoMapper.paraEntidade(op));
@@ -199,7 +196,7 @@ public class ImportacaoService {
     private void rejeitarDuplicada(Acumulador acc, long linha, String detalhe) {
         acc.duplicadas++;
         acc.rejeitadas++;
-        acc.registrarRejeicao(new LinhaInvalidaException(MotivoRejeicao.LINHA_DUPLICADA, "numero_do_contrato", detalhe), linha);
+        acc.registrarRejeicao(new LinhaInvalidaException(MotivoRejeicao.LINHA_DUPLICADA, "linha_completa", detalhe), linha);
     }
 
     // ---------------------------------------------------------------- cabeçalho

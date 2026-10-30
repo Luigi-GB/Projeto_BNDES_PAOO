@@ -12,13 +12,9 @@ import java.util.List;
 
 public interface ContratoRepository extends JpaRepository<Contrato, Integer>, JpaSpecificationExecutor<Contrato> {
 
-    boolean existsByNumeroDoContrato(String numeroDoContrato);
-
-    boolean existsByNumeroDoContratoAndIdNot(String numeroDoContrato, Integer id);
-
-    /** Devolve, entre os números informados, os que já existem no banco (usado na reimportação). */
-    @Query("select c.numeroDoContrato from Contrato c where c.numeroDoContrato in :numeros")
-    List<String> findNumerosExistentes(@Param("numeros") Collection<String> numeros);
+    /** Devolve, entre os hashes informados, os que já existem no banco (linhas idênticas já importadas). */
+    @Query("select c.hashLinha from Contrato c where c.hashLinha in :hashes")
+    List<String> findHashesExistentes(@Param("hashes") Collection<String> hashes);
 
     /** Base do gráfico: quantidade e valor contratado agrupados por UF. */
     @Query("select new br.com.fatec.api_bndes.dto.ResumoUf(c.uf, count(c), sum(c.valorContratadoReais)) "

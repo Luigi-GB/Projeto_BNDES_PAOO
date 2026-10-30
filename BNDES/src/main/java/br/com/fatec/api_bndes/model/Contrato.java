@@ -7,6 +7,8 @@ import java.time.LocalDate;
 
 /** Uma operação de financiamento do BNDES (uma linha do CSV oficial, já tratada). */
 @Entity
+@Table(name = "contrato",
+        uniqueConstraints = @UniqueConstraint(name = "uk_contrato_hash_linha", columnNames = "hash_linha"))
 public class Contrato {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,7 +29,15 @@ public class Contrato {
     @Column(name = "municipio", length = 100)
     private String municipio;
 
-    @Column(name = "numero_do_contrato", nullable = false, unique = true)
+    /**
+     * Impressão digital (SHA-256) de todos os campos tratados da linha do CSV. É o que identifica uma
+     * linha duplicada (o número do contrato se repete legitimamente). Fica nulo nos contratos cadastrados
+     * manualmente. De propósito não tem getter/setter, para não aparecer no JSON da API.
+     */
+    @Column(name = "hash_linha", length = 64)
+    private String hashLinha;
+
+    @Column(name = "numero_do_contrato", nullable = false)
     private String numeroDoContrato;
 
     @Column(name = "data_da_contratacao")
@@ -109,6 +119,9 @@ public class Contrato {
     private String situacaoDoContrato;
 
     public Contrato() {}
+
+    /** Usado só pela importação do CSV. */
+    public void aplicarHashLinha(String hash) { this.hashLinha = hash; }
 
     public Integer getId() { return id; }
 
